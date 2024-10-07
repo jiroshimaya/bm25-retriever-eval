@@ -1,0 +1,6 @@
+langchain
+langchain-community==0.3.1
+scipy
+rank-bm25
+scikit-learn
+datasets
