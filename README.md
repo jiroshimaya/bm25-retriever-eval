@@ -14,22 +14,28 @@ Given these findings, this implementation is likely to be effective in scenarios
 
 | Retriever | Time (seconds per query) |
 |-----------|--------------------------|
-| TFIDFRetriever | 0.0034 ± 0.0020 |
-| CurrentBM25Retriever | 0.0912 ± 0.0014 |
-| NewBM25Retriever | 0.0019 ± 0.0002 |
+| TFIDFRetriever | 0.0310 ± 0.0201 |
+| CurrentBM25Retriever | 1.2280 ± 0.8320 |
+| NewBM25Retriever | 0.0282 ± 0.0016 |
+
+These results were obtained using a corpus of 100,000 documents and an average of 10 queries.
+
 
 ### Initialization Time
 
 | Retriever | Time (seconds) |
 |-----------|----------------|
-| TFIDFRetriever | 0.3279 ± 0.1542 |
-| CurrentBM25Retriever | 0.2286 ± 0.0211 |
-| NewBM25Retriever | 0.6594 ± 0.0277 |
+| TFIDFRetriever | 3.0546 ± 0.1234 |
+| CurrentBM25Retriever | 2.5157 ± 0.1372 |
+| NewBM25Retriever | 7.4195 ± 0.1648 |
+
+These results were obtained using a corpus of 100,000 documents and an average of 10 queries.
+
 
 ### Retrieval Results
 
 #### Retrieval Verification
-The verification process compared the top 100 search results between NewBM25Retriever and CurrentBM25Retriever. Out of 100 queries tested, 6 queries (6%) showed differences in their results. The specific ranks where mismatches occurred were:
+The verification process compared the top 100 search results from a corpus 10,000 documents between NewBM25Retriever and CurrentBM25Retriever. Out of 100 queries tested, 6 queries (6%) showed differences in their results. The specific ranks where mismatches occurred were:
 
 - Query 4: Mismatch at result #87
 - Query 28: Mismatch at result #47

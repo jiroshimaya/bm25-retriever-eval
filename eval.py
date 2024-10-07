@@ -17,14 +17,14 @@ def measure_init_time(retriever_class, corpus, num_runs=10):
         times.append(end_time - start_time)
     return statistics.mean(times), statistics.stdev(times)
 
-def measure_query_time(retriever, queries, num_runs=10):
+def measure_query_time(retriever, queries):
     times = []
-    for _ in tqdm(range(num_runs), desc=f"Measuring {type(retriever).__name__} query time"):
+    for query in tqdm(queries, desc=f"Measuring {type(retriever).__name__} query time"):
+        query_times = []
         start_time = time.time()
-        for query in queries:
-            retriever.invoke(query)
+        retriever.invoke(query)
         end_time = time.time()
-        times.append((end_time - start_time) / len(queries))  # Average time per query
+        times.append(end_time - start_time)
     return statistics.mean(times), statistics.stdev(times)
 
 
@@ -165,7 +165,8 @@ if __name__ == "__main__":
     dataset = load_dataset('ag_news')
 
     # Define sub-corpus size
-    corpus_size = 10000
+    speed_corpus_size = 100000
+    accuracy_corpus_size = 10000
     speed_query_size = 10
     accuracy_query_size = 100
     # Extract the text data from the dataset
