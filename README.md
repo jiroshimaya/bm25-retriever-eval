@@ -1,8 +1,12 @@
 # BM25Retriever Performance Evaluation
 
-This report summarizes the performance evaluation of an improved BM25-based retrieval system, which aims to enhance the query speed of the existing BM25 implementation in langchain. The main objective is to verify whether the query speed has indeed improved, and to assess any potential impacts on initialization time and retrieval accuracy when compared to the original implementation.
+This repository provides an improved implementation of langchain's BM25Retriever aimed at enhancing query search speed, along with code to evaluate its performance against the existing BM25Retriever, and a report summarizing the evaluation results and analysis.
 
-As a result, the improved BM25Retriever takes 2-3 times longer to initialize compared to the conventional one when searching a corpus of 10,000 documents. However, its search speed is nearly 50 times faster. Moreover, the search results were identical to those of the conventional retriever. In real-world applications, reducing the time per query often contributes more to user experience than reducing initialization time, so this improvement is likely to be effective in many cases.
+When evaluated on a corpus of 10,000 documents, the improved BM25Retriever took 2-3 times longer to initialize but achieved a search speed nearly 50 times faster than the original implementation.
+
+While the code modifications resulted in slightly different search results in some cases compared to the existing implementation, the impact is considered negligible for most real-world applications.
+
+Given these findings, this implementation is likely to be effective in scenarios where faster per-query search speed is prioritized over initialization time, which is expected to be the case for many applications.
 
 ## Results
 
@@ -21,9 +25,6 @@ As a result, the improved BM25Retriever takes 2-3 times longer to initialize com
 | TFIDFRetriever | 0.3279 ± 0.1542 |
 | CurrentBM25Retriever | 0.2286 ± 0.0211 |
 | NewBM25Retriever | 0.6594 ± 0.0277 |
-
-The above shows the initialization time for a corpus of 10,000 documents. The values are averages from 10 trials.
-The initialization time for NewBM25Retriever is 2 to 3 times slower than TFIDFRetriever and CurrentBM25Retriever.
 
 ### Retrieval Results
 
@@ -47,9 +48,7 @@ The BM25 scores calculated by NewBM25Retriever (using pre-computed BM25 vectors 
 
 2. **Query Performance**: NewBM25Retriever shows exceptional query performance, being nearly 50 times faster than CurrentBM25Retriever (0.0019s vs 0.0912s per query). This is crucial for applications requiring frequent retrieval operations and directly fulfills the main objective of improving query speed.
 
-3. **Consistency**: NewBM25Retriever demonstrates the most consistent performance across queries, as indicated by its low standard deviation in query time (0.0002s compared to 0.0014s for CurrentBM25Retriever).
-
-4. **Retrieval Accuracy and BM25 Score Verification**: The verification process demonstrates high consistency between NewBM25Retriever and CurrentBM25Retriever outputs. Only 6% of queries exhibited differences in their top 100 results, with most discrepancies occurring at rank 50 or below. Furthermore, the BM25 scores computed by the new implementation show remarkable alignment with the original scores. These findings strongly indicate that the new implementation maintains retrieval accuracy while achieving significant performance improvements.
+3. **Retrieval Accuracy and BM25 Score Verification**: The verification process demonstrates high consistency between NewBM25Retriever and CurrentBM25Retriever outputs. 6% of queries exhibited differences in their top 100 results, with most discrepancies occurring at rank 50 or below. Furthermore, the BM25 scores computed by the new implementation show remarkable alignment with the original scores. These findings strongly indicate that the new implementation maintains retrieval accuracy while achieving significant performance improvements.
 
 ## Execution Instructions
 
