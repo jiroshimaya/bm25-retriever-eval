@@ -27,27 +27,6 @@ def measure_query_time(retriever, queries, num_runs=10):
         times.append((end_time - start_time) / len(queries))  # Average time per query
     return statistics.mean(times), statistics.stdev(times)
 
-def run_init_speed():
-    tfidf_init_time, tfidf_init_stdev = measure_init_time(TFIDFRetriever.from_texts, corpus)
-    current_bm25_init_time, current_bm25_init_stdev = measure_init_time(CurrentBM25Retriever.from_texts, corpus)
-    new_bm25_init_time, new_bm25_init_stdev = measure_init_time(NewBM25Retriever.from_texts, corpus)
-
-    print(f"TFIDFRetriever initialization: {tfidf_init_time:.4f} ± {tfidf_init_stdev:.4f} seconds")
-    print(f"CurrentBM25Retriever initialization: {current_bm25_init_time:.4f} ± {current_bm25_init_stdev:.4f} seconds")
-    print(f"NewBM25Retriever initialization: {new_bm25_init_time:.4f} ± {new_bm25_init_stdev:.4f} seconds")
-
-def run_query_speed():
-    tfidf = TFIDFRetriever.from_texts(corpus)
-    current_bm25 = CurrentBM25Retriever.from_texts(corpus)
-    new_bm25 = NewBM25Retriever.from_texts(corpus)
-
-    tfidf_query_time, tfidf_query_stdev = measure_query_time(tfidf, queries)
-    current_bm25_query_time, current_bm25_query_stdev = measure_query_time(current_bm25, queries)
-    new_bm25_query_time, new_bm25_query_stdev = measure_query_time(new_bm25, queries)
-
-    print(f"TFIDFRetriever query time: {tfidf_query_time:.4f} ± {tfidf_query_stdev:.4f} seconds per query")
-    print(f"CurrentBM25Retriever query time: {current_bm25_query_time:.4f} ± {current_bm25_query_stdev:.4f} seconds per query")
-    print(f"NewBM25Retriever query time: {new_bm25_query_time:.4f} ± {new_bm25_query_stdev:.4f} seconds per query")
 
 def verify_bm25_retrieval(corpus, queries, k = 100):
     current_bm25 = CurrentBM25Retriever.from_texts(corpus)
@@ -55,27 +34,31 @@ def verify_bm25_retrieval(corpus, queries, k = 100):
     new_bm25 = NewBM25Retriever.from_texts(corpus)
     new_bm25.k = k
 
-    for query in tqdm(queries, desc="Verifying retriever outputs"):
+    mismatch_count = 0
+    total_queries = len(queries)
+
+    for query_id, query in enumerate(tqdm(queries, desc="Verifying retriever outputs")):
         current_results = current_bm25.invoke(query)
         new_results = new_bm25.invoke(query)
 
         # Compare the results
         if len(current_results) != len(new_results):
-            print(f"Mismatch in number of results for query: {query}")
+            print(f"Query {query_id}: Mismatch in number of results")
+            mismatch_count += 1
             continue
 
-        for current_doc, new_doc in zip(current_results, new_results):
+        for idx, (current_doc, new_doc) in enumerate(zip(current_results, new_results), 1):
             if current_doc.page_content != new_doc.page_content:
-                print(f"Content mismatch for query: {query}")
-                print(f"CurrentBM25: {current_doc.page_content}")
-                print(f"NewBM25: {new_doc.page_content}")
+                print(f"Query {query_id}: Content mismatch at result #{idx}")
+                mismatch_count += 1
                 break
-    else:
-        print("All retriever outputs match.")
 
-def run_verify_retrieval():
-    print("Verifying CurrentBM25Retriever and NewBM25Retriever outputs...")
-    verify_bm25_retrieval(corpus, queries)
+    if mismatch_count == 0:
+        print("All retriever outputs match.")
+    else:
+        mismatch_ratio = mismatch_count / total_queries
+        print(f"Mismatch ratio: {mismatch_ratio:.2%} ({mismatch_count}/{total_queries} queries)")
+
 
 
 def verify_bm25_scores(corpus, queries, k=100):
@@ -98,18 +81,20 @@ def verify_bm25_scores(corpus, queries, k=100):
     original_scores = []
     for query in tqdm(queries_tokenized, desc="Calculating original scores"):
         scores = original_bm25.get_scores(query)
-        original_scores.append(scores)
+        top_100_scores = np.sort(scores)[-k:]  # Get top k scores
+        original_scores.append(top_100_scores)
 
     # Calculate scores using new vectorizer
     corpus_vectors = new_vectorizer.transform(corpus_tokenized)
     query_vectors = new_vectorizer.count_transform(queries_tokenized)
     new_scores = query_vectors.dot(corpus_vectors.T).toarray()
+    new_scores = np.sort(new_scores, axis=1)[:, -k:]  # Get top k scores for each query
 
     # Convert lists to numpy arrays for easier manipulation
     original_scores_array = np.array(original_scores)
     new_scores_array = new_scores
 
-    # Calculate the difference between new and original scores
+    # Calculate the difference between new and original scores for top k
     score_difference = new_scores_array - original_scores_array
 
     # Calculate statistics
@@ -118,22 +103,51 @@ def verify_bm25_scores(corpus, queries, k=100):
     max_difference = np.max(score_difference)
     min_difference = np.min(score_difference)
 
-    print(f"Mean difference: {mean_difference}")
-    print(f"Standard deviation of difference: {std_difference}")
-    print(f"Max difference: {max_difference}")
-    print(f"Min difference: {min_difference}")
+    # Calculate average of mean scores for top k
+    original_mean_scores = np.mean(original_scores_array, axis=1)
+    new_mean_scores = np.mean(new_scores_array, axis=1)
+    average_of_means = (np.mean(original_mean_scores) + np.mean(new_mean_scores)) / 2
 
-    # Calculate correlation
-    correlation = np.corrcoef(original_scores_array.flatten(), new_scores_array.flatten())[0, 1]
-    print(f"Correlation between original and new scores: {correlation}")
+    print(f"Mean difference for top {k} scores: {mean_difference}")
+    print(f"Standard deviation of difference for top {k} scores: {std_difference}")
+    print(f"Max difference for top {k} scores: {max_difference}")
+    print(f"Min difference for top {k} scores: {min_difference}")
+    print(f"Average of mean scores for top {k}: {average_of_means}")
 
     # Check if scores are close enough
     if np.allclose(original_scores_array, new_scores_array, atol=1e-6):
-        print("All scores match within tolerance.")
+        print(f"All top {k} scores match within tolerance.")
     else:
-        print("Some scores differ beyond tolerance.")
+        print(f"Some top {k} scores differ beyond tolerance.")
 
-def run_verify_scores():
+def run_init_speed(corpus):
+    tfidf_init_time, tfidf_init_stdev = measure_init_time(TFIDFRetriever.from_texts, corpus)
+    current_bm25_init_time, current_bm25_init_stdev = measure_init_time(CurrentBM25Retriever.from_texts, corpus)
+    new_bm25_init_time, new_bm25_init_stdev = measure_init_time(NewBM25Retriever.from_texts, corpus)
+
+    print(f"TFIDFRetriever initialization: {tfidf_init_time:.4f} ± {tfidf_init_stdev:.4f} seconds")
+    print(f"CurrentBM25Retriever initialization: {current_bm25_init_time:.4f} ± {current_bm25_init_stdev:.4f} seconds")
+    print(f"NewBM25Retriever initialization: {new_bm25_init_time:.4f} ± {new_bm25_init_stdev:.4f} seconds")
+
+def run_query_speed(corpus, queries):
+    tfidf = TFIDFRetriever.from_texts(corpus)
+    current_bm25 = CurrentBM25Retriever.from_texts(corpus)
+    new_bm25 = NewBM25Retriever.from_texts(corpus)
+
+    tfidf_query_time, tfidf_query_stdev = measure_query_time(tfidf, queries)
+    current_bm25_query_time, current_bm25_query_stdev = measure_query_time(current_bm25, queries)
+    new_bm25_query_time, new_bm25_query_stdev = measure_query_time(new_bm25, queries)
+
+    print(f"TFIDFRetriever query time: {tfidf_query_time:.4f} ± {tfidf_query_stdev:.4f} seconds per query")
+    print(f"CurrentBM25Retriever query time: {current_bm25_query_time:.4f} ± {current_bm25_query_stdev:.4f} seconds per query")
+    print(f"NewBM25Retriever query time: {new_bm25_query_time:.4f} ± {new_bm25_query_stdev:.4f} seconds per query")
+
+def run_verify_retrieval(corpus, queries):
+    print("Verifying CurrentBM25Retriever and NewBM25Retriever outputs...")
+    verify_bm25_retrieval(corpus, queries)
+
+
+def run_verify_scores(corpus, queries):
     print("Verifying BM25 scores...")
     verify_bm25_scores(corpus, queries)
 
@@ -152,23 +166,26 @@ if __name__ == "__main__":
 
     # Define sub-corpus size
     corpus_size = 10000
-    query_size = 10
+    speed_query_size = 10
+    accuracy_query_size = 100
     # Extract the text data from the dataset
     corpus = [item['text'] for item in dataset['train'].select(range(corpus_size))]  # First sub_corpus_size items for corpus_a
-    queries = [item['text'] for item in dataset['test'].select(range(query_size))]
+    speed_queries = [item['text'] for item in dataset['test'].select(range(speed_query_size))]
+    accuracy_queries = [item['text'] for item in dataset['test'].select(range(accuracy_query_size))]
+    
     
     if not (args.init_speed or args.query_speed or args.verify_retrieval or args.verify_scores):
         # If no arguments are provided, run all tests
-        run_init_speed()
-        run_query_speed()
-        run_verify_retrieval()
-        run_verify_scores()
+        run_init_speed(corpus)
+        run_query_speed(corpus, speed_queries)
+        run_verify_retrieval(corpus, accuracy_queries)
+        run_verify_scores(corpus, accuracy_queries)
     else:
         if args.init_speed:
-            run_init_speed()
+            run_init_speed(corpus)
         if args.query_speed:
-            run_query_speed()
+            run_query_speed(corpus, speed_queries)
         if args.verify_retrieval:
-            run_verify_retrieval()
+            run_verify_retrieval(corpus, accuracy_queries)
         if args.verify_scores:
-            run_verify_scores()
+            run_verify_scores(corpus, accuracy_queries)
