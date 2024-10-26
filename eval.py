@@ -61,7 +61,7 @@ def verify_bm25_retrieval(corpus, queries, k = 100):
 
 
 
-def verify_bm25_scores(corpus, queries, k=100):
+def verify_bm25_scores(corpus, queries):
     from rank_bm25 import BM25Okapi
     from new_bm25 import create_bm25_vectorizer
     import numpy as np
@@ -81,21 +81,19 @@ def verify_bm25_scores(corpus, queries, k=100):
     original_scores = []
     for query in tqdm(queries_tokenized, desc="Calculating original scores"):
         scores = original_bm25.get_scores(query)
-        top_100_scores = np.sort(scores)[-k:]  # Get top k scores
-        original_scores.append(top_100_scores)
+        original_scores.append(scores)
 
     # Calculate scores using new vectorizer
     corpus_vectors = new_vectorizer.transform(corpus_tokenized)
     query_vectors = new_vectorizer.count_transform(queries_tokenized)
     new_scores = query_vectors.dot(corpus_vectors.T).toarray()
-    new_scores = np.sort(new_scores, axis=1)[:, -k:]  # Get top k scores for each query
-
+    
     # Convert lists to numpy arrays for easier manipulation
     original_scores_array = np.array(original_scores)
     new_scores_array = new_scores
 
     # Calculate the difference between new and original scores for top k
-    score_difference = new_scores_array - original_scores_array
+    score_difference = np.abs(new_scores_array - original_scores_array)
 
     # Calculate statistics
     mean_difference = np.mean(score_difference)
@@ -108,17 +106,11 @@ def verify_bm25_scores(corpus, queries, k=100):
     new_mean_scores = np.mean(new_scores_array, axis=1)
     average_of_means = (np.mean(original_mean_scores) + np.mean(new_mean_scores)) / 2
 
-    print(f"Mean difference for top {k} scores: {mean_difference}")
-    print(f"Standard deviation of difference for top {k} scores: {std_difference}")
-    print(f"Max difference for top {k} scores: {max_difference}")
-    print(f"Min difference for top {k} scores: {min_difference}")
-    print(f"Average of mean scores for top {k}: {average_of_means}")
-
-    # Check if scores are close enough
-    if np.allclose(original_scores_array, new_scores_array, atol=1e-6):
-        print(f"All top {k} scores match within tolerance.")
-    else:
-        print(f"Some top {k} scores differ beyond tolerance.")
+    print(f"Mean difference: {mean_difference}")
+    print(f"Standard deviation of difference: {std_difference}")
+    print(f"Max difference: {max_difference}")
+    print(f"Min difference: {min_difference}")
+    print(f"Average of mean scores: {average_of_means}")
 
 def run_init_speed(corpus):
     tfidf_init_time, tfidf_init_stdev = measure_init_time(TFIDFRetriever.from_texts, corpus)
@@ -170,23 +162,24 @@ if __name__ == "__main__":
     speed_query_size = 10
     accuracy_query_size = 100
     # Extract the text data from the dataset
-    corpus = [item['text'] for item in dataset['train'].select(range(corpus_size))]  # First sub_corpus_size items for corpus_a
+    speed_corpus = [item['text'] for item in dataset['train'].select(range(speed_corpus_size))]  # First sub_corpus_size items for corpus_a
+    accuracy_corpus = [item['text'] for item in dataset['train'].select(range(accuracy_corpus_size))]
     speed_queries = [item['text'] for item in dataset['test'].select(range(speed_query_size))]
     accuracy_queries = [item['text'] for item in dataset['test'].select(range(accuracy_query_size))]
     
     
     if not (args.init_speed or args.query_speed or args.verify_retrieval or args.verify_scores):
         # If no arguments are provided, run all tests
-        run_init_speed(corpus)
-        run_query_speed(corpus, speed_queries)
-        run_verify_retrieval(corpus, accuracy_queries)
-        run_verify_scores(corpus, accuracy_queries)
+        run_init_speed(speed_corpus)
+        run_query_speed(speed_corpus, speed_queries)
+        run_verify_retrieval(accuracy_corpus, accuracy_queries)
+        run_verify_scores(accuracy_corpus, accuracy_queries)
     else:
         if args.init_speed:
-            run_init_speed(corpus)
+            run_init_speed(speed_corpus)
         if args.query_speed:
-            run_query_speed(corpus, speed_queries)
+            run_query_speed(speed_corpus, speed_queries)
         if args.verify_retrieval:
-            run_verify_retrieval(corpus, accuracy_queries)
+            run_verify_retrieval(accuracy_corpus, accuracy_queries)
         if args.verify_scores:
-            run_verify_scores(corpus, accuracy_queries)
+            run_verify_scores(accuracy_corpus, accuracy_queries)
