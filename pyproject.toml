@@ -1,0 +1,14 @@
+[project]
+name = "bm25-eval"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "datasets>=3.0.2",
+    "langchain>=0.3.4",
+    "langchain-community>=0.3.3",
+    "rank-bm25>=0.2.2",
+    "scikit-learn>=1.5.2",
+    "scipy>=1.14.1",
+]
