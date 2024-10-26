@@ -1,5 +1,7 @@
 # BM25Retrieverの改修と評価
 
+#### [English](https://github.com/jiroshimaya/bm25-retriever-eval/blob/main/README.md) | [日本語](https://github.com/jiroshimaya/bm25-retriever-eval/blob/main/README.ja.md)
+
 このリポジトリは、langchainのBM25Retrieverの改良実装と、それにより達成された検索速度改善等の評価結果を提供します。
 
 100,000件のドキュメントのコーパスで評価したところ、改良されたBM25Retrieverは初期化に2〜3倍の時間がかかりましたが、検索速度は元の実装よりも約50倍速くなりました。

@@ -1,5 +1,7 @@
 # BM25Retriever Performance Evaluation
 
+#### [English](https://github.com/jiroshimaya/bm25-retriever-eval/blob/main/README.md) | [日本語](https://github.com/jiroshimaya/bm25-retriever-eval/blob/main/README.ja.md)
+
 This repository provides an improved implementation of langchain's BM25Retriever aimed at enhancing query search speed, along with code to evaluate its performance against the existing BM25Retriever, and a report summarizing the evaluation results and analysis.
 
 When evaluated on a corpus of 100,000 documents, the improved BM25Retriever took 2-3 times longer to initialize but achieved a search speed nearly 50 times faster than the original implementation.
