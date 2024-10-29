@@ -16,7 +16,7 @@ This implementation provides the following advantages and disadvantages. The per
 
 Advantages
 - Improved merge speed (approximately 2-3 times faster in Japanese and 0.7-1.5 times faster in English for a corpus of about 10,000 items)
-- Enhanced search speed (approximately 50 times faster for a corpus of 100,000 items)
+- Enhanced search speed (approximately 40-50 times faster for a corpus of 100,000 items)
 
 Disadvantages
 - Decreased initialization speed (0.3-0.7 times slower for a corpus of 100,000 items)
@@ -136,7 +136,7 @@ CurrentBM25Retriever query time: 1.1794 ± 0.8022 seconds per query
 NewBM25Retriever query time: 0.0271 ± 0.0012 seconds per query
 ```
 
-The search speed of the improved BM25Retriever is approximately 50 times faster than before the improvement. Additionally, it achieves a speed comparable to the TFIDFRetriever, which also calculates similarity using matrix operations, demonstrating the effectiveness of the improvement.
+The search speed of the improved BM25Retriever is approximately 40-50 times faster than before the improvement. Additionally, it achieves a speed comparable to the TFIDFRetriever, which also calculates similarity using matrix operations, demonstrating the effectiveness of the improvement.
 
 ### Initialization Speed
 
